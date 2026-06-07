@@ -25,12 +25,9 @@
     <script>
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            if (username === 'admin' && password === 'admin123') {
+            if (username === 'admin' && password === 'Bangla@12345') {
             localStorage.setItem('isAdmin', 'true');
             window.location.href = '/admin-dashboard'; // 🚀 (.html বা অতিরিক্ত স্ল্যাশ ছাড়া শুধু রাউট নাম)
-            } else {
-                alert('Invalid Username or Password!');
-            }
         });
     </script>
 </body>
