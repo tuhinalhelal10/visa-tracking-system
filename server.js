@@ -127,6 +127,21 @@ app.get('/track', (req, res) => {
 });
 // =============================================================
 
+// ৪. অ্যাডমিন প্যানেল থেকে মঙ্গোডিবি ডাটা ডিলিট করার API
+app.delete('/en/admin/delete/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedApp = await Application.findByIdAndDelete(id);
+        if (deletedApp) {
+            res.json({ success: true, message: 'Application record deleted from MongoDB Cloud successfully.' });
+        } else {
+            res.status(404).json({ success: false, message: 'Record not found.' });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error while deleting data.' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
