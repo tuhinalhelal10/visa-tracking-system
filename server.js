@@ -1,74 +1,35 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-const fs = require('fs');
+const mongoose = require('mongoose');
 
 const app = express();
-const PORT = 3000; // ম্যাকের AirPlay সমস্যার কারণে পোর্ট ৩০০০ করা হলো
+const PORT = process.env.PORT || 3000;
 
-// JSON ফাইল পাথ সেটআপ
-const DATA_DIR = path.join(__dirname, 'data');
-const DATA_PATH = path.join(DATA_DIR, 'applications.json');
+// 🛑 [খুব গুরুত্বপূর্ণ]: নিচে আপনার মঙ্গোডিবির আসল কানেকশন লিংকটি বসান
+const MONGO_URI = "mongodb+srv://yousuf223334433_db_user:cg56YGZEo67WaW0N@cluster0.cxy6bnf.mongodb.net/";
 
-try {
-    if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(DATA_PATH)) {
-        fs.writeFileSync(DATA_PATH, JSON.stringify([], null, 2));
-    }
-} catch (err) {
-    console.error("Folder creation error:", err);
-}
+mongoose.connect(MONGO_URI)
+    .then(() => console.log('🚀 Connected to MongoDB Atlas successfully!'))
+    .catch(err => console.error('❌ MongoDB Connection Error:', err));
+
+// মঙ্গোডিবি স্কিমা ও মডেল তৈরি
+const ApplicationSchema = new mongoose.Schema({
+    applicationId: { type: String, required: true, unique: true, trim: true },
+    passportNo: { type: String, required: true, trim: true },
+    status: { type: String, required: true, default: 'Under Process' },
+    updatedAt: { type: Date, default: Date.now }
+});
+const Application = mongoose.model('Application', ApplicationSchema);
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// স্ট্যাটিক ফাইলের জন্য public ফোল্ডার কনফিগারেশন
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Helper Functions
-const readData = () => {
-    try {
-        if (!fs.existsSync(DATA_PATH)) return [];
-        const jsonData = fs.readFileSync(DATA_PATH, 'utf-8');
-        return JSON.parse(jsonData || '[]');
-    } catch (e) {
-        return [];
-    }
-};
-
-const writeData = (data) => {
-    try {
-        fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
-    } catch (e) {
-        console.error(e);
-    }
-};
-
-// ================= VIEW ROUTES =================
-
-app.get('/en/node/109.html', (req, res) => {
-    const filePath = path.join(__dirname, 'public', 'en', 'node', '109.html');
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).send('<h1>109.html file not found in public/en/node/ directory.</h1>');
-    }
-    res.sendFile(filePath);
-});
-
-app.get('/admin', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
-});
-
-app.get('/admin/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
-});
-
-// ================= API ROUTES =================
-
-app.post('/en/track', (req, res) => {
+// ১. ব্যবহারকারীর জন্য ট্র্যাকিং API (109.html থেকে ডাটা রিসিভ করবে)
+app.post('/en/track', async (req, res) => {
     try {
         const searchData = req.body.search || {};
         const applicationId = (searchData.application_id || req.body.applicationId || '').trim();
@@ -78,97 +39,59 @@ app.post('/en/track', (req, res) => {
             return res.status(400).json({ success: false, message: 'Application ID and Passport No are required.' });
         }
 
-        const applications = readData();
-        
-        // 🚀 লিনাক্স সার্ভারের কেস-সেন্সিটিভিটি (Case-sensitivity) ফিক্স করা হলো .toLowerCase() দিয়ে
-        const matchedApp = applications.find(
-            app => app.applicationId.trim().toLowerCase() === applicationId.toLowerCase() && 
-                   app.passportNo.trim().toLowerCase() === passportNo.toLowerCase()
-        );
+        // লিনাক্স সার্ভারের জন্য ছোট-বড় হাতের অক্ষরের অমিল ফিক্স করা হলো (RegExp দিয়ে)
+        const matchedApp = await Application.findOne({
+            applicationId: { $regex: new RegExp(`^${applicationId}$`, "i") },
+            passportNo: { $regex: new RegExp(`^${passportNo}$`, "i") }
+        });
 
         if (matchedApp) {
             res.json({ success: true, status: matchedApp.status });
         } else {
-            res.status(404).json({ success: false, message: 'No application found with these details.' });
+            res.status(404).json({ success: false, message: 'No record found.' });
         }
     } catch (error) {
-        console.error("Tracking Error:", error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
-// ডাটা ডিলিট করার এপিআই রুট
-app.post('/en/admin/delete', (req, res) => {
-    try {
-        const { applicationId } = req.body;
-        if (!applicationId) {
-            return res.status(400).json({ success: false, message: 'Application ID is required.' });
-        }
-
-        let applications = readData();
-        const initialLength = applications.length;
-        
-        // নির্দিষ্ট আইডিটি বাদে বাকি সব ডাটা ফিল্টার করে রাখা হচ্ছে
-        applications = applications.filter(app => app.applicationId.toLowerCase() !== applicationId.trim().toLowerCase());
-
-        if (applications.length === initialLength) {
-            return res.status(404).json({ success: false, message: 'Application not found.' });
-        }
-
-        writeData(applications);
-        res.json({ success: true, message: 'Application deleted successfully.' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error, failed to delete data.' });
-    }
-});
-
-app.post('/en/admin/update', (req, res) => {
+// ২. অ্যাডমিন প্যানেল থেকে ডাটা সেভ বা আপডেট করার API
+app.post('/en/admin/update', async (req, res) => {
     try {
         const { applicationId, passportNo, status } = req.body;
         
-        if (!applicationId || !passportNo || !status) {
-            return res.status(400).json({ success: false, message: 'All fields are required.' });
-        }
+        let application = await Application.findOne({ applicationId: applicationId.trim() });
 
-        let applications = readData();
-        const index = applications.findIndex(app => app.applicationId === applicationId.trim());
-
-        if (index !== -1) {
-            applications[index].passportNo = passportNo.trim();
-            applications[index].status = status;
-            applications[index].updatedAt = new Date().toISOString();
+        if (application) {
+            application.passportNo = passportNo.trim();
+            application.status = status;
+            application.updatedAt = Date.now();
+            await application.save();
         } else {
-            applications.push({
+            application = new Application({
                 applicationId: applicationId.trim(),
                 passportNo: passportNo.trim(),
-                status: status,
-                updatedAt: new Date().toISOString()
+                status: status
             });
+            await application.save();
         }
 
-        writeData(applications);
         res.json({ success: true, message: 'Application status synchronized successfully.' });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Failed to save data.' });
     }
 });
 
-app.get('/en/admin/applications', (req, res) => {
+// ৩. অ্যাডমিন প্যানেলে সব অ্যাপ্লিকেশনের লিস্ট দেখানোর API
+app.get('/en/admin/applications', async (req, res) => {
     try {
-        const applications = readData();
-        applications.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        const applications = await Application.find().sort({ updatedAt: -1 });
         res.json(applications);
     } catch (error) {
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
-// সার্ভার চালু করা
 app.listen(PORT, () => {
-    console.log(`==================================================`);
-    console.log(`🚀 Server is successfully running on port ${PORT}`);
-    console.log(`👉 Track Page: http://localhost:${PORT}/en/node/109.html`);
-    console.log(`👉 Admin Panel: http://localhost:${PORT}/admin`);
-    console.log(`🛑 Press CTRL + C to stop the server.`);
-    console.log(`==================================================`);
+    console.log(`🚀 Server running on port ${PORT}`);
 });
