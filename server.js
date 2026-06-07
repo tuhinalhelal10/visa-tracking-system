@@ -110,6 +110,23 @@ app.get('/track', (req, res) => {
 });
 // =============================================================
 
+// ==================== Admin Pages Routing ====================
+// ১. এডমিন লগইন পেজ
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
+});
+
+// ২. এডমিন ড্যাশবোর্ড পেজ 
+app.get('/admin-dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
+});
+
+// ৩. ট্র্যাকিং পেজ
+app.get('/track', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', '109.html'));
+});
+// =============================================================
+
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
