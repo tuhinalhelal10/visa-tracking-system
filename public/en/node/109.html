@@ -685,6 +685,91 @@ window.addEventListener('DOMContentLoaded', (event) => {
 });
 </script>
       ==========================Modifay===================================
+
+
+      ======================modifay 2======================================
+      <script>
+window.addEventListener('DOMContentLoaded', (event) => {
+    // ড্রুপালের অরিজিনাল সাবমিট বাটন আইডি
+    const submitBtn = document.getElementById('edit-search-actions-submit');
+    
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const appIdInput = document.getElementById('edit-search-application-id');
+            const passportInput = document.getElementById('edit-search-passport-no');
+            
+            if (!appIdInput || !passportInput) return;
+
+            const appId = appIdInput.value.trim();
+            const passportNo = passportInput.value.trim();
+
+            if (!appId || !passportNo) {
+                alert('Please enter both Application ID and Passport Number.');
+                return;
+            }
+
+            // মঙ্গোডিবি ক্লাউড ব্যাকএন্ডের সাথে কানেক্ট করার জন্য রিকোয়েস্ট
+            fetch('/en/track', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    search: {
+                        application_id: appId,
+                        passport_no: passportNo
+                    }
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                let resultBox = document.getElementById('tracking-result');
+                if (!resultBox) {
+                    resultBox = document.createElement('div');
+                    resultBox.id = 'tracking-result';
+                    resultBox.style.marginTop = '25px';
+                    resultBox.style.padding = '20px';
+                    resultBox.style.border = '1px solid #ccc';
+                    resultBox.style.borderRadius = '5px';
+                    resultBox.style.fontFamily = 'Arial, sans-serif';
+                    
+                    const form = document.getElementById('gvcw-countries-form-tracking-application');
+                    if (form) form.appendChild(resultBox);
+                }
+
+                if (data.success) {
+                    // মঙ্গোডিবি থেকে স্ট্যাটাস (যেমন: Approved) নিয়ে এসে শো করবে
+                    resultBox.style.backgroundColor = '#d4edda';
+                    resultBox.style.color = '#155724';
+                    resultBox.style.borderColor = '#c3e6cb';
+                    resultBox.innerHTML = `
+                        <div style="font-size: 22px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #b1dfbb; padding-bottom: 8px;">
+                            Application Status: <span style="text-transform: uppercase; color: #28a745; font-weight: 900;">${data.status}</span>
+                        </div>
+                        <div style="font-size: 15px; color: #333; line-height: 1.5;">
+                            <strong>Application ID:</strong> ${appId} <br>
+                            <strong>Passport No:</strong> ${passportNo}
+                        </div>
+                    `;
+                } else {
+                    resultBox.style.backgroundColor = '#f8d7da';
+                    resultBox.style.color = '#721c24';
+                    resultBox.style.borderColor = '#f5c6cb';
+                    resultBox.innerHTML = `<strong>Error:</strong> ${data.message || 'No record found in MongoDB.'}`;
+                }
+            })
+            .catch(err => {
+                console.error('Fetch Error:', err);
+                alert('Server connection failed. Please check if your Render app is live.');
+            });
+        });
+    }
+});
+  </script>
+===============================================end==========================================
     <script>
     window.addEventListener('DOMContentLoaded', (event) => {
     // ১. ইনপুটের অরিজিনাল আইডি অনুযায়ী সাবমিট বাটনটি ধরা হচ্ছে
