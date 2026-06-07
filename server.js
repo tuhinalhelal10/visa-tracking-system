@@ -92,6 +92,24 @@ app.get('/en/admin/applications', async (req, res) => {
     }
 });
 
+// ==================== Admin Pages Routing ====================
+
+// ১. এডমিন লগইন পেজের রাউট (/admin লিখলে এটি ওপেন হবে)
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-login.html'));
+});
+
+// ২. এডমিন ড্যাশবোর্ড পেজের রাউট (/admin-dashboard লিখলে এটি ওপেন হবে)
+app.get('/admin-dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-dashboard.html'));
+});
+
+// ৩. ট্র্যাকিং পেজের মূল রাউট (ঐচ্ছিক - এটি আপনার মেইন ডোমেইনে ট্র্যাক পেজ ওপেন করতে সাহায্য করবে)
+app.get('/track', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', '109.html'));
+});
+// =============================================================
+
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
