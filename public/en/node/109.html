@@ -606,80 +606,82 @@ Sunday-Thursday</p>
   ==========================Modifay===================================
 
     <script>
-document.getElementById('edit-search-actions-submit').addEventListener('click', function(e) {
-    e.preventDefault(); // ড্রুপালের ডিফল্ট সাবমিট বা রিলোড বন্ধ করবে
-    e.stopPropagation(); // ইভেন্ট অন্য কোথাও যাওয়া আটকাবে
-    e.preventDefault(); // পেজ রিলোড বন্ধ করার জন্য
-    
-    const appId = document.getElementById('edit-search-application-id').value.trim();
-  const passportNo = document.getElementById('edit-search-passport-no').value.trim();
+window.addEventListener('DOMContentLoaded', (event) => {
+    const submitBtn = document.getElementById('edit-search-actions-submit');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
 
-  if (!appId || !passportNo) {
-      alert('Please enter both Application ID and Passport Number.');
-      return;
-  }
+            const appIdInput = document.getElementById('edit-search-application-id');
+            const passportInput = document.getElementById('edit-search-passport-no');
+            
+            if (!appIdInput || !passportInput) return;
 
-    // রেজাল্ট দেখানোর বক্স আগে থেকে থাকলে রিমুভ করবে
-    const oldResult = document.getElementById('tracking-result-box');
-    if(oldResult) oldResult.remove();
+            const appId = appIdInput.value.trim();
+            const passportNo = passportInput.value.trim();
 
-    // API তে ডেটা পাঠানো হচ্ছে
-    fetch('/en/track', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            search: {
-                application_id: appId,
-                passport_no: passportNo
+            if (!appId || !passportNo) {
+                alert('Please enter both Application ID and Passport Number.');
+                return;
             }
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        const resultDiv = document.createElement('div');
-        resultDiv.id = 'tracking-result-box';
-        resultDiv.style.marginTop = '20px';
-        resultDiv.style.padding = '20px';
-        resultDiv.style.borderRadius = '5px';
-        resultDiv.style.textAlign = 'center';
-        resultDiv.style.lineHeight = '1.6';
 
-        if(data.success) {
-            resultDiv.style.backgroundColor = '#d4edda';
-            resultDiv.style.color = '#155724';
-            resultDiv.style.border = '1px solid #c3e6cb';
-            
-            // এখানে স্ট্যাটাসের নিচে অ্যাপ্লিকেশন আইডি এবং পাসপোর্ট নম্বর শো করবে
-            resultDiv.innerHTML = `
-                <div style="font-size: 18px; font-weight: bold; margin-bottom: 10px;">
-                    Application Status: <span style="text-transform: uppercase;">${data.status}</span>
-                </div>
-                <div style="font-size: 14px; font-weight: normal; border-top: 1px solid #b1dfbb; padding-top: 10px;">
-                    <strong>Application ID:</strong> ${appId} <br>
-                    <strong>Passport No:</strong> ${passportNo}
-                </div>
-            `;
-        } else {
-            resultDiv.style.backgroundColor = '#f8d7da';
-            resultDiv.style.color = '#721c24';
-            resultDiv.style.border = '1px solid #f5c6cb';
-            
-            resultDiv.innerHTML = `
-                <div style="font-size: 16px; font-weight: bold;">
-                    Error: ${data.message}
-                </div>
-            `;
-        }
-        
-        // ফরমের নিচে রেজাল্ট যোগ করা হচ্ছে
-        document.getElementById('gvcw-countries-form-tracking-application').appendChild(resultDiv);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Something went wrong. Please try again.');
-    });
+            // পূর্বে এখানে http://localhost:3000/en/track ছিল, যা লাইভে কাজ করত না।
+            // এখন শুধু আপেক্ষিক পাথ (Relative Path) দেওয়া হলো যা লোকাল এবং রেন্ডার উভয় জায়গায় কাজ করবে।
+            fetch('/en/track', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    search: {
+                        application_id: appId,
+                        passport_no: passportNo
+                    }
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                // আপনার পেজে রেজাল্ট দেখানোর বক্স বা ডিভ (ID: tracking-result)
+                let resultBox = document.getElementById('tracking-result');
+                if (!resultBox) {
+                    resultBox = document.createElement('div');
+                    resultBox.id = 'tracking-result';
+                    resultBox.style.marginTop = '20px';
+                    resultBox.style.padding = '15px';
+                    resultBox.style.border = '1px solid #ccc';
+                    resultBox.style.borderRadius = '4px';
+                    // ফর্মের নিচে বক্সটি যুক্ত করা হচ্ছে
+                    const form = document.getElementById('gvcw-countries-form-tracking-application');
+                    if (form) form.appendChild(resultBox);
+                }
+
+                if (data.success) {
+                    resultBox.style.backgroundColor = '#d4edda';
+                    resultBox.style.color = '#155724';
+                    resultBox.style.borderColor = '#c3e6cb';
+                    resultBox.innerHTML = `
+                        <div style="font-size: 20px; font-weight: bold; margin-bottom: 12px; border-bottom: 1px solid #b1dfbb; padding-bottom: 10px;">
+                            Application Status: <span style="text-transform: uppercase; color: #28a745;">${data.status}</span>
+                        </div>
+                        <div style="font-size: 15px; font-weight: normal; line-height: 1.6; color: #333;">
+                            <strong>Application ID:</strong> ${appId} <br>
+                            <strong>Passport No:</strong> ${passportNo}
+                        </div>
+                    `;
+                } else {
+                    resultBox.style.backgroundColor = '#f8d7da';
+                    resultBox.style.color = '#721c24';
+                    resultBox.style.borderColor = '#f5c6cb';
+                    resultBox.innerHTML = `<strong>Error:</strong> ${data.message || 'No record found.'}`;
+                }
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                alert('Failed to connect to the server.');
+            });
+        });
+    }
 });
 </script>
       ==========================Modifay===================================
