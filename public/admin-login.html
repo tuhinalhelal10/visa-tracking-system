@@ -25,13 +25,29 @@
     <script>
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            if (username === 'admin' && password === 'admin123') {
-            localStorage.setItem('isAdmin', 'true');
-            window.location.href = '/admin/dashboard'; // 🚀 (.html বা অতিরিক্ত স্ল্যাশ ছাড়া শুধু রাউট নাম)
+            
+            const usernameInput = document.getElementById('username').value.trim();
+            const passwordInput = document.getElementById('password').value.trim();
+
+            // 🔑 এখানে আপনার সঠিক ইউজারনেম ও পাসওয়ার্ড দেওয়া হলো
+            const CORRECT_USER = 'admin';
+            const CORRECT_PASS = 'Bangla@12345';
+
+            if (usernameInput === CORRECT_USER && passwordInput === CORRECT_PASS) {
+                // সেশন বা লোকাল স্টোরেজে সফল লগইন মার্ক করা হচ্ছে
+                localStorage.setItem('isAdmin', 'true');
+                
+                // 🚀 মঙ্গোডিবি রাউটের সাথে মিল রেখে সঠিকভাবে রিডাইরেক্ট করা হচ্ছে
+                window.location.href = '/admin/dashboard';
             } else {
                 alert('Invalid Username or Password!');
             }
         });
+
+        // যদি অলরেডি লগইন করা থাকে তবে সরাসরি ড্যাশবোর্ডে পাঠিয়ে দেবে
+        if (localStorage.getItem('isAdmin') === 'true') {
+            window.location.href = '/admin/dashboard';
+        }
     </script>
 </body>
 </html>
