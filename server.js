@@ -79,14 +79,20 @@ app.post('/en/track', (req, res) => {
         }
 
         const applications = readData();
-        const foundApp = applications.find(app => app.applicationId === applicationId && app.passportNo === passportNo);
+        
+        // 🚀 লিনাক্স সার্ভারের কেস-সেন্সিটিভিটি (Case-sensitivity) ফিক্স করা হলো .toLowerCase() দিয়ে
+        const matchedApp = applications.find(
+            app => app.applicationId.trim().toLowerCase() === applicationId.toLowerCase() && 
+                   app.passportNo.trim().toLowerCase() === passportNo.toLowerCase()
+        );
 
-        if (!foundApp) {
-            return res.status(404).json({ success: false, message: 'No application found with these details.' });
+        if (matchedApp) {
+            res.json({ success: true, status: matchedApp.status });
+        } else {
+            res.status(404).json({ success: false, message: 'No application found with these details.' });
         }
-
-        res.json({ success: true, status: foundApp.status });
     } catch (error) {
+        console.error("Tracking Error:", error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
